@@ -117,7 +117,7 @@ export default function GardenCityGuardView() {
     }
   };
 
-  const compressImage = (base64Str: string): Promise<string> => {
+  const compressImage = (base64Str: string, addTimestamp: boolean = false): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
       img.src = base64Str;
@@ -143,7 +143,23 @@ export default function GardenCityGuardView() {
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          if (addTimestamp) {
+            const now = new Date();
+            const timestamp = now.toLocaleString();
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3;
+            const textWidth = ctx.measureText(timestamp).width;
+            const x = width - textWidth - 15;
+            const y = height - 15;
+            ctx.strokeText(timestamp, x, y);
+            ctx.fillText(timestamp, x, y);
+          }
+        }
         const compressedBase64 = canvas.toDataURL('image/jpeg', 0.5);
         resolve(compressedBase64);
       };
@@ -392,7 +408,7 @@ export default function GardenCityGuardView() {
           
           setIsUploading(true);
           try {
-            const compressed = await compressImage(imageData);
+            const compressed = await compressImage(imageData, true);
             const url = await firebaseService.uploadImage(compressed, selectedGuard);
             const newImages = [...images];
             newImages[activeCameraSection] = url;
