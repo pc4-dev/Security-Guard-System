@@ -1,0 +1,129 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: guards
+    // Document ID: guardId
+    // Fields:
+    //   - id: string (required) - Unique ID of the guard
+    //   - name: string (required) - Full name of the guard
+    //   - phone: string (optional) - Phone number
+    //   - site: string (required) - Assigned site
+    //
+    // Collection: checkpoints
+    // Document ID: checkpointId
+    // Fields:
+    //   - id: string (required) - Unique ID of the checkpoint
+    //   - name: string (required) - Name of the checkpoint
+    //   - site: string (required) - Site where the checkpoint is located
+    //   - latitude: number (required) - Latitude coordinate
+    //   - longitude: number (required) - Longitude coordinate
+    //
+    // Collection: patrolLogs
+    // Document ID: logId
+    // Fields:
+    //   - id: string (optional) - Unique ID of the log
+    //   - guardId: string (required) - ID of the guard
+    //   - guardName: string (optional) - Name of the guard
+    //   - checkpointId: string (required) - ID of the checkpoint
+    //   - checkpointName: string (optional) - Name of the checkpoint
+    //   - siteName: string (optional) - Name of the site
+    //   - timestamp: string (required) - Time of visit (ISO 8601)
+    //   - status: string (required) - Status of the patrol (Completed/Missed)
+    //   - round: string (required) - The patrol round/shift
+    //   - photoUrls: list (optional) - URLs of evidence photos
+    //
+    // Collection: incidents
+    // Document ID: incidentId
+    // Fields:
+    //   - id: string (optional) - Unique ID of the incident
+    //   - guardId: string (required) - ID of the guard reporting
+    //   - guardName: string (optional) - Name of the guard
+    //   - siteName: string (optional) - Site where incident occurred
+    //   - description: string (required) - Detailed description
+    //   - timestamp: string (required) - Time of incident (ISO 8601)
+    //   - photoUrls: list (optional) - URLs of evidence photos
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "pc4@neotericgrp.in" && request.auth.token.email_verified == true));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string &&
+        email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string &&
+        dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    // Guards Collection
+    match /guards/{guardId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Checkpoints Collection
+    match /checkpoints/{checkpointId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Patrol Logs Collection
+    match /patrolLogs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+        hasRequiredFields(['guardId', 'checkpointId', 'timestamp', 'status', 'round']) &&
+        isValidDateString(request.resource.data.timestamp);
+      allow update, delete: if isAdmin();
+    }
+
+    // Incidents Collection
+    match /incidents/{incidentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+        hasRequiredFields(['guardId', 'description', 'timestamp']) &&
+        isValidDateString(request.resource.data.timestamp);
+      allow update, delete: if isAdmin();
+    }
+
+    // Users Collection (for RBAC and files)
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAdmin();
+
+      match /files/{fileId} {
+        allow read, write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      }
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

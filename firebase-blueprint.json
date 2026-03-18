@@ -1,0 +1,85 @@
+{
+  "entities": {
+    "Guard": {
+      "title": "Guard",
+      "description": "Security guard profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID of the guard" },
+        "name": { "type": "string", "description": "Full name of the guard" },
+        "phone": { "type": "string", "description": "Phone number" },
+        "site": { "type": "string", "description": "Assigned site" }
+      },
+      "required": ["id", "name", "site"]
+    },
+    "Checkpoint": {
+      "title": "Checkpoint",
+      "description": "A specific location to be checked during patrol",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID of the checkpoint" },
+        "name": { "type": "string", "description": "Name of the checkpoint" },
+        "site": { "type": "string", "description": "Site where the checkpoint is located" },
+        "latitude": { "type": "number", "description": "Latitude coordinate" },
+        "longitude": { "type": "number", "description": "Longitude coordinate" }
+      },
+      "required": ["id", "name", "site", "latitude", "longitude"]
+    },
+    "PatrolLog": {
+      "title": "Patrol Log",
+      "description": "Record of a checkpoint visit",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID of the log" },
+        "guardId": { "type": "string", "description": "ID of the guard" },
+        "guardName": { "type": "string", "description": "Name of the guard" },
+        "checkpointId": { "type": "string", "description": "ID of the checkpoint" },
+        "checkpointName": { "type": "string", "description": "Name of the checkpoint" },
+        "siteName": { "type": "string", "description": "Name of the site" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Time of visit" },
+        "status": { "type": "string", "enum": ["Completed", "Missed"], "description": "Status of the patrol" },
+        "photoUrls": { "type": "array", "items": { "type": "string" }, "description": "URLs of evidence photos" },
+        "round": { "type": "string", "description": "The patrol round/shift" }
+      },
+      "required": ["guardId", "checkpointId", "timestamp", "status", "round"]
+    },
+    "Incident": {
+      "title": "Incident Report",
+      "description": "Report of an unusual occurrence",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID of the incident" },
+        "guardId": { "type": "string", "description": "ID of the guard reporting" },
+        "guardName": { "type": "string", "description": "Name of the guard" },
+        "siteName": { "type": "string", "description": "Site where incident occurred" },
+        "description": { "type": "string", "description": "Detailed description" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "Time of incident" },
+        "photoUrls": { "type": "array", "items": { "type": "string" }, "description": "URLs of evidence photos" }
+      },
+      "required": ["guardId", "description", "timestamp"]
+    },
+    "UploadedFile": {
+      "title": "Uploaded File",
+      "description": "Metadata for a file uploaded by a user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID of the file" },
+        "fileName": { "type": "string", "description": "Name of the file" },
+        "fileSize": { "type": "number", "description": "Size of the file in bytes" },
+        "storagePath": { "type": "string", "description": "Path in Firebase Storage" },
+        "notes": { "type": "string", "description": "User notes about the file" },
+        "uploadDate": { "type": "string", "format": "date-time", "description": "Time of upload" },
+        "summary": { "type": "string", "description": "AI generated summary" },
+        "downloadUrl": { "type": "string", "description": "Public download URL" }
+      },
+      "required": ["fileName", "fileSize", "storagePath", "uploadDate"]
+    }
+  },
+  "firestore": {
+    "/guards/{guardId}": { "schema": "Guard", "description": "Collection of security guards" },
+    "/checkpoints/{checkpointId}": { "schema": "Checkpoint", "description": "Collection of patrol checkpoints" },
+    "/patrolLogs/{logId}": { "schema": "PatrolLog", "description": "Collection of patrol activity logs" },
+    "/incidents/{incidentId}": { "schema": "Incident", "description": "Collection of incident reports" },
+    "/users/{userId}/files/{fileId}": { "schema": "UploadedFile", "description": "Collection of files uploaded by a user" }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "Neoteric Properties - Guard Checkpoint System",
+  "description": "Security patrol monitoring system for Neoteric Properties sites in Gwalior, Madhya Pradesh.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
