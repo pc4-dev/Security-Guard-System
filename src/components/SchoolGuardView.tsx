@@ -149,6 +149,8 @@ export default function SchoolGuardView() {
         setUploadProgress('');
         setImages([null, null, null, null, null, null]);
         setImageNames([null, null, null, null, null, null]);
+        setSelectedGuard('');
+        setRound('Checkpoint 1');
       }, 3000);
     } catch (err) {
       console.error('Submission error:', err);

@@ -149,8 +149,11 @@ export default function GuardView() {
       setTimeout(() => {
         setSuccess(false);
         setSelectedProject('');
+        setSelectedGuard('');
+        setRound('Checkpoint 1');
         setUploadProgress('');
         setImages([null, null, null, null, null, null]);
+        setImageNames([null, null, null, null, null, null]);
       }, 3000);
     } catch (err) {
       console.error('Submission error:', err);

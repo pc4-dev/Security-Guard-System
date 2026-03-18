@@ -98,6 +98,9 @@ export default function GardenCityGuardView() {
         setSuccess(false);
         setUploadProgress('');
         setImages(new Array(6).fill(null));
+        setImageNames(new Array(6).fill(null));
+        setSelectedGuard('');
+        setRound('Checkpoint 1');
       }, 3000);
     } catch (err) {
       console.error('Submission error:', err);
