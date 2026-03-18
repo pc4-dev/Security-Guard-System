@@ -46,6 +46,12 @@ async function startServer() {
   let guards = [
     { id: "G001", name: "Ramesh Kumar", phone: "9876543210", site: "Regal Garden" },
     { id: "G002", name: "Suresh Singh", phone: "9123456789", site: "Garden City" },
+    { id: "G003", name: "विपिन कुमार शर्मा", phone: "0000000000", site: "School" },
+    { id: "G004", name: "लखन सिंह गौर", phone: "0000000000", site: "School" },
+    { id: "G005", name: "योगेश सिंह कुशवाह", phone: "0000000000", site: "School" },
+    { id: "G006", name: "अनुज दीक्षित", phone: "0000000000", site: "School" },
+    { id: "G007", name: "सुरेंद्र सिंह", phone: "0000000000", site: "School" },
+    { id: "G008", name: "ब्रजेश यादव", phone: "0000000000", site: "School" },
   ];
 
   const sites = ["Regal Garden", "Garden City", "Nature Park", "OBC", "Milestone", "Hyde Park", "NG Grand"];

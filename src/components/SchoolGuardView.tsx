@@ -6,7 +6,7 @@ import { Checkpoint, Guard } from '../types';
 import { cn } from '../utils';
 import CameraModal from './CameraModal';
 
-export default function GuardView() {
+export default function SchoolGuardView() {
   const [guards, setGuards] = useState<Guard[]>([]);
   const [checkpoints, setCheckpoints] = useState<Checkpoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +33,7 @@ export default function GuardView() {
 
   // Form State
   const [selectedGuard, setSelectedGuard] = useState('');
-  const [selectedProject, setSelectedProject] = useState('');
+  const selectedProject = "School"; // Fixed for this portal
   const [round, setRound] = useState('Checkpoint 1');
   const [images, setImages] = useState<(string | null)[]>([null, null, null, null, null, null]);
   const [imageNames, setImageNames] = useState<(string | null)[]>([null, null, null, null, null, null]);
@@ -48,9 +48,6 @@ export default function GuardView() {
     useRef<HTMLInputElement>(null),
   ];
 
-  const projects = ["Regal Garden", "Garden City", "Nature Park", "OBC", "Milestone", "Hyde Park", "NG Grand", "School"];
-  const filteredCheckpoints = checkpoints.filter(c => !selectedProject || c.site === selectedProject);
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -58,7 +55,8 @@ export default function GuardView() {
           firebaseService.getGuards(),
           firebaseService.getCheckpoints()
         ]);
-        setGuards(g);
+        // Filter guards by School if possible, or just show all
+        setGuards(g.filter(guard => guard.site === selectedProject || !guard.site));
         setCheckpoints(c);
       } catch (err) {
         console.error(err);
@@ -71,8 +69,8 @@ export default function GuardView() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedGuard || !selectedProject) {
-      alert("Please fill all required fields.");
+    if (!selectedGuard) {
+      alert("Please select your name.");
       return;
     }
 
@@ -87,7 +85,7 @@ export default function GuardView() {
     try {
       const guard = guards.find(g => g.id === selectedGuard);
 
-      console.log('Preparing submission for:', { guard: guard?.name, photosCount: photosToUpload.length });
+      console.log('Preparing submission for School:', { guard: guard?.name, photosCount: photosToUpload.length });
 
       const imageUrls: string[] = new Array(6).fill('');
       
@@ -148,9 +146,9 @@ export default function GuardView() {
       setError(null);
       setTimeout(() => {
         setSuccess(false);
-        setSelectedProject('');
         setUploadProgress('');
         setImages([null, null, null, null, null, null]);
+        setImageNames([null, null, null, null, null, null]);
       }, 3000);
     } catch (err) {
       console.error('Submission error:', err);
@@ -158,7 +156,6 @@ export default function GuardView() {
       
       if (err instanceof Error) {
         try {
-          // Check if it's a JSON error from handleFirestoreError
           const parsed = JSON.parse(err.message);
           if (parsed.error) {
             errorMessage = `Database Error: ${parsed.error}`;
@@ -166,7 +163,6 @@ export default function GuardView() {
             errorMessage = err.message;
           }
         } catch {
-          // Not JSON, use raw message
           errorMessage = err.message;
         }
       }
@@ -206,8 +202,6 @@ export default function GuardView() {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
-        
-        // Compress to JPEG with 0.5 quality for faster uploads
         const compressedBase64 = canvas.toDataURL('image/jpeg', 0.5);
         resolve(compressedBase64);
       };
@@ -242,7 +236,7 @@ export default function GuardView() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="w-10 h-10 text-brand-primary animate-spin" />
-        <p className="mt-4 text-text-secondary font-medium">Loading patrol data...</p>
+        <p className="mt-4 text-text-secondary font-medium">Loading School data...</p>
       </div>
     );
   }
@@ -250,8 +244,8 @@ export default function GuardView() {
   return (
     <div className="max-w-2xl mx-auto font-sans">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-text-primary mb-2">Guard Portal</h2>
-        <p className="text-text-secondary">Official portal for Neoteric Properties security personnel.</p>
+        <h2 className="text-3xl font-bold text-text-primary mb-2">School Security Portal</h2>
+        <p className="text-text-secondary">Official portal for School security personnel.</p>
       </div>
 
       <AnimatePresence mode="wait">
@@ -281,73 +275,54 @@ export default function GuardView() {
                 </select>
               </div>
 
-              {/* Project & Checkpoint Selection */}
+              {/* Project Details */}
               <div className="bg-white p-6 rounded-3xl border border-border-custom shadow-sm">
                 <label className="flex items-center gap-2 text-xs font-bold text-text-secondary mb-4 uppercase tracking-wider">
                   <Building2 className="w-4 h-4" /> Site Details
                 </label>
                 <div className="space-y-4">
-                  <select
-                    value={selectedProject}
-                    onChange={(e) => {
-                      setSelectedProject(e.target.value);
-                    }}
-                    className="w-full p-4 bg-page-bg border border-border-custom rounded-2xl focus:ring-2 focus:ring-brand-primary outline-none transition-all text-text-primary font-medium"
-                    required
-                  >
-                    <option value="">Select Project Name</option>
-                    {projects.map(p => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
-
-                  <select
-                    value={round}
-                    onChange={(e) => setRound(e.target.value)}
-                    className="w-full p-4 bg-page-bg border border-border-custom rounded-2xl focus:ring-2 focus:ring-brand-primary outline-none transition-all text-text-primary font-medium"
-                  >
-                    <option>Checkpoint 1</option>
-                    <option>Checkpoint 2</option>
-                    <option>Checkpoint 3</option>
-                    <option>Checkpoint 4</option>
-                    <option>Checkpoint 5</option>
-                    <option>Checkpoint 6</option>
-                    <option>Checkpoint 7</option>
-                    <option>Checkpoint 8</option>
-                    <option>Checkpoint 9</option>
-                    <option>Checkpoint 10</option>
-                  </select>
+                  <div className="p-4 bg-brand-light/30 border border-brand-primary/10 rounded-2xl flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                      <Building2 className="w-5 h-5 text-brand-primary" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-brand-primary uppercase tracking-widest">Active Site</p>
+                      <p className="text-sm font-bold text-text-primary">School</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Image Sections 1-6 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-4">
                 {[0, 1, 2, 3, 4, 5].map((idx) => (
-                  <div key={idx} className="bg-white p-6 rounded-3xl border border-border-custom shadow-sm">
-                    <label className="flex items-center gap-2 text-xs font-bold text-text-secondary mb-4 uppercase tracking-wider">
-                      <Camera className="w-4 h-4" /> Image-{idx + 1}
-                    </label>
+                  <div key={idx} className="bg-white p-4 rounded-2xl border border-border-custom shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="flex items-center gap-2 text-xs font-bold text-text-secondary uppercase tracking-wider">
+                        <Camera className="w-4 h-4" /> Checkpoint-{idx + 1} Image
+                      </label>
+                    </div>
                     
-                    <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <button
                         type="button"
                         onClick={() => {
                           setActiveCameraSection(idx);
                           setIsCameraOpen(true);
                         }}
-                        className="flex flex-col items-center justify-center p-4 bg-page-bg border-2 border-dashed border-border-custom rounded-2xl hover:bg-brand-light hover:border-brand-primary/30 transition-all group"
+                        className="flex items-center justify-center gap-2 p-3 bg-page-bg border-2 border-dashed border-border-custom rounded-xl hover:bg-brand-light hover:border-brand-primary/30 transition-all group"
                       >
-                        <Camera className="w-6 h-6 text-text-muted group-hover:text-brand-primary mb-1" />
-                        <span className="text-[10px] font-bold text-text-secondary group-hover:text-brand-primary uppercase tracking-wider">Live Camera</span>
+                        <Camera className="w-5 h-5 text-text-muted group-hover:text-brand-primary" />
+                        <span className="text-xs font-bold text-text-secondary group-hover:text-brand-primary uppercase tracking-wider">Live Camera</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => fileInputRefs[idx].current?.click()}
-                        className="flex flex-col items-center justify-center p-4 bg-page-bg border-2 border-dashed border-border-custom rounded-2xl hover:bg-brand-light hover:border-brand-primary/30 transition-all group"
+                        className="flex items-center justify-center gap-2 p-3 bg-page-bg border-2 border-dashed border-border-custom rounded-xl hover:bg-brand-light hover:border-brand-primary/30 transition-all group"
                       >
-                        <Upload className="w-6 h-6 text-text-muted group-hover:text-brand-primary mb-1" />
-                        <span className="text-[10px] font-bold text-text-secondary group-hover:text-brand-primary uppercase tracking-wider">Upload</span>
+                        <Upload className="w-5 h-5 text-text-muted group-hover:text-brand-primary" />
+                        <span className="text-xs font-bold text-text-secondary group-hover:text-brand-primary uppercase tracking-wider">Upload</span>
                         <input
                           ref={fileInputRefs[idx]}
                           type="file"
@@ -359,45 +334,52 @@ export default function GuardView() {
                     </div>
 
                     {images[idx] && (
-                      <div className="relative rounded-xl overflow-hidden aspect-video border border-border-custom bg-page-bg">
-                        <img src={images[idx]!} alt={`Image-${idx + 1} Preview`} className="w-full h-full object-contain" />
+                      <div className="mt-2 flex items-center gap-2 p-2 bg-page-bg border border-border-custom rounded-xl relative group">
+                        <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+                          <ImageIcon className="w-4 h-4 text-red-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-bold text-text-primary truncate">{imageNames[idx]}</p>
+                        </div>
                         
+                        {!submitting && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setImages(prev => {
+                                const next = [...prev];
+                                next[idx] = null;
+                                return next;
+                              });
+                              setImageNames(prev => {
+                                const next = [...prev];
+                                next[idx] = null;
+                                return next;
+                              });
+                            }}
+                            className="p-1 text-text-muted hover:text-status-red transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
                         {/* Progress Overlay */}
                         {submitting && photoProgress[images.slice(0, idx).filter(p => p !== null).length] !== undefined && photoProgress[images.slice(0, idx).filter(p => p !== null).length] < 100 && (
-                          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center p-2">
-                            <div className="w-48 h-1 bg-white/20 rounded-full overflow-hidden mb-1">
+                          <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] rounded-xl flex items-center px-3">
+                            <div className="flex-1 h-1 bg-page-bg rounded-full overflow-hidden">
                               <motion.div 
                                 className="h-full bg-brand-primary"
                                 initial={{ width: 0 }}
                                 animate={{ width: `${photoProgress[images.slice(0, idx).filter(p => p !== null).length]}%` }}
                               />
                             </div>
-                            <span className="text-[8px] font-black text-white uppercase tracking-widest">
-                              {Math.round(photoProgress[images.slice(0, idx).filter(p => p !== null).length])}%
-                            </span>
                           </div>
                         )}
 
                         {submitting && photoProgress[images.slice(0, idx).filter(p => p !== null).length] === 100 && (
-                          <div className="absolute inset-0 bg-status-green/20 backdrop-blur-[1px] flex items-center justify-center">
-                            <div className="bg-white rounded-full p-1 shadow-lg">
-                              <CheckCircle2 className="w-4 h-4 text-status-green" />
-                            </div>
+                          <div className="absolute inset-0 bg-status-green/5 backdrop-blur-[1px] rounded-xl flex items-center justify-end px-3">
+                            <CheckCircle2 className="w-3 h-3 text-status-green" />
                           </div>
-                        )}
-
-                        {!submitting && (
-                          <button
-                            type="button"
-                            onClick={() => setImages(prev => {
-                              const next = [...prev];
-                              next[idx] = null;
-                              return next;
-                            })}
-                            className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full backdrop-blur-md hover:bg-black/70 transition-all shadow-lg"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
                         )}
                       </div>
                     )}
@@ -452,7 +434,7 @@ export default function GuardView() {
                   ) : (
                     <>
                       <Send className="w-6 h-6" />
-                      Submit Patrol Check
+                      Submit School Patrol Check
                     </>
                   )}
                 </button>
@@ -477,7 +459,7 @@ export default function GuardView() {
                 )}
               </div>
             </form>
-          </motion.div>
+        </motion.div>
       </AnimatePresence>
 
       <CameraModal

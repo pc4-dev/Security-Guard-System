@@ -19,12 +19,19 @@ export default function GardenCityGuardView() {
 
   // Form State
   const [selectedGuard, setSelectedGuard] = useState('');
-  const [selectedCheckpoint, setSelectedCheckpoint] = useState('');
-  const [round, setRound] = useState('Round 1');
-  const [notes, setNotes] = useState('');
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [round, setRound] = useState('Checkpoint 1');
+  const [images, setImages] = useState<(string | null)[]>(new Array(6).fill(null));
+  const [imageNames, setImageNames] = useState<(string | null)[]>(new Array(6).fill(null));
+  const [activeCameraSection, setActiveCameraSection] = useState<number | null>(null);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRefs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+  ];
   
   const selectedProject = "Garden City";
   const filteredCheckpoints = checkpoints.filter(c => c.site === selectedProject);
@@ -50,7 +57,7 @@ export default function GardenCityGuardView() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedGuard || !selectedCheckpoint) {
+    if (!selectedGuard) {
       alert("Please fill all required fields.");
       return;
     }
@@ -61,20 +68,26 @@ export default function GardenCityGuardView() {
     
     try {
       const guard = guards.find(g => g.id === selectedGuard);
-      const checkpoint = checkpoints.find(c => c.id === selectedCheckpoint);
 
       setUploadProgress('Saving patrol log...');
       const logPayload = {
         guardId: selectedGuard,
         guardName: guard?.name || '',
-        checkpointId: selectedCheckpoint,
-        checkpointName: checkpoint?.name || '',
+        checkpointId: round, // Using round (Checkpoint X) as checkpointId
+        checkpointName: round, // Using round (Checkpoint X) as checkpointName
         siteName: selectedProject,
-        photoUrls: photos,
+        image1Url: images[0] || '',
+        image2Url: images[1] || '',
+        image3Url: images[2] || '',
+        image4Url: images[3] || '',
+        image5Url: images[4] || '',
+        image6Url: images[5] || '',
+        photoUrls: images.filter((url): url is string => !!url),
         status: 'Completed' as const,
         timestamp: new Date().toISOString(),
         round,
-        notes: notes.trim() || undefined
+        notes: "",
+        imageNames: imageNames.filter((n): n is string => n !== null)
       };
 
       await firebaseService.submitPatrolLog(logPayload);
@@ -83,10 +96,8 @@ export default function GardenCityGuardView() {
       setError(null);
       setTimeout(() => {
         setSuccess(false);
-        setSelectedCheckpoint('');
         setUploadProgress('');
-        setPhotos([]);
-        setNotes('');
+        setImages(new Array(6).fill(null));
       }, 3000);
     } catch (err) {
       console.error('Submission error:', err);
@@ -139,7 +150,7 @@ export default function GardenCityGuardView() {
     });
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     if (!selectedGuard) {
       alert("Please select your name first.");
       return;
@@ -147,6 +158,7 @@ export default function GardenCityGuardView() {
     const files = e.target.files;
     if (files && files[0]) {
       setIsUploading(true);
+      setActiveCameraSection(index);
       const file = files[0];
       try {
         const reader = new FileReader();
@@ -156,13 +168,19 @@ export default function GardenCityGuardView() {
         });
         const compressed = await compressImage(base64);
         const url = await firebaseService.uploadImage(compressed, selectedGuard);
-        setPhotos([url]);
+        const newImages = [...images];
+        newImages[index] = url;
+        setImages(newImages);
+        const newNames = [...imageNames];
+        newNames[index] = file.name;
+        setImageNames(newNames);
       } catch (err) {
         console.error("Upload failed", err);
         const message = err instanceof Error ? err.message : "Image failed to upload.";
         alert(`${message} Please try again.`);
       } finally {
         setIsUploading(false);
+        setActiveCameraSection(null);
       }
     }
   };
@@ -226,86 +244,83 @@ export default function GardenCityGuardView() {
                 </div>
 
                 <select
-                  value={selectedCheckpoint}
-                  onChange={(e) => setSelectedCheckpoint(e.target.value)}
-                  className="w-full p-4 bg-page-bg border border-border-custom rounded-2xl focus:ring-2 focus:ring-brand-primary outline-none transition-all text-text-primary font-medium"
-                  required
-                >
-                  <option value="">Select Checkpoint</option>
-                  {filteredCheckpoints.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-
-                <select
                   value={round}
                   onChange={(e) => setRound(e.target.value)}
                   className="w-full p-4 bg-page-bg border border-border-custom rounded-2xl focus:ring-2 focus:ring-brand-primary outline-none transition-all text-text-primary font-medium"
                 >
-                  <option>Round 1</option>
-                  <option>Round 2</option>
-                  <option>Round 3</option>
+                  <option>Checkpoint 1</option>
+                  <option>Checkpoint 2</option>
+                  <option>Checkpoint 3</option>
+                  <option>Checkpoint 4</option>
+                  <option>Checkpoint 5</option>
+                  <option>Checkpoint 6</option>
+                  <option>Checkpoint 7</option>
+                  <option>Checkpoint 8</option>
+                  <option>Checkpoint 9</option>
+                  <option>Checkpoint 10</option>
                 </select>
-
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Add any notes or report issues (Optional)"
-                  className="w-full p-4 bg-page-bg border border-border-custom rounded-2xl focus:ring-2 focus:ring-brand-primary outline-none transition-all text-text-primary font-medium min-h-[100px] resize-none"
-                />
               </div>
             </div>
 
-            {/* Image Upload Section */}
-            <div className="bg-white p-6 rounded-3xl border border-border-custom shadow-sm">
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <button
-                  type="button"
-                  disabled={isUploading}
-                  onClick={() => setIsCameraOpen(true)}
-                  className="flex flex-col items-center justify-center p-4 bg-page-bg border-2 border-dashed border-border-custom rounded-2xl hover:bg-brand-light hover:border-brand-primary/30 transition-all group disabled:opacity-50"
-                >
-                  {isUploading ? <Loader2 className="w-6 h-6 animate-spin text-brand-primary mb-1" /> : <Camera className="w-6 h-6 text-text-muted group-hover:text-brand-primary mb-1" />}
-                  <span className="text-[10px] font-bold text-text-secondary group-hover:text-brand-primary uppercase tracking-wider">{isUploading ? 'Uploading...' : 'Live Camera'}</span>
-                </button>
+            {/* Image Sections */}
+            {[0, 1, 2, 3, 4, 5].map((index) => (
+              <div key={index} className="bg-white p-6 rounded-3xl border border-border-custom shadow-sm">
+                <label className="flex items-center gap-2 text-xs font-bold text-text-secondary mb-4 uppercase tracking-wider">
+                  <Camera className="w-4 h-4" /> Image-{index + 1}
+                </label>
+                
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <button
+                    type="button"
+                    disabled={isUploading}
+                    onClick={() => {
+                      setActiveCameraSection(index);
+                      setIsCameraOpen(true);
+                    }}
+                    className="flex flex-col items-center justify-center p-4 bg-page-bg border-2 border-dashed border-border-custom rounded-2xl hover:bg-brand-light hover:border-brand-primary/30 transition-all group disabled:opacity-50"
+                  >
+                    {isUploading && activeCameraSection === index ? <Loader2 className="w-6 h-6 animate-spin text-brand-primary mb-1" /> : <Camera className="w-6 h-6 text-text-muted group-hover:text-brand-primary mb-1" />}
+                    <span className="text-[10px] font-bold text-text-secondary group-hover:text-brand-primary uppercase tracking-wider">{isUploading && activeCameraSection === index ? 'Uploading...' : 'Live Camera'}</span>
+                  </button>
 
-                <button
-                  type="button"
-                  disabled={isUploading}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex flex-col items-center justify-center p-4 bg-page-bg border-2 border-dashed border-border-custom rounded-2xl hover:bg-brand-light hover:border-brand-primary/30 transition-all group disabled:opacity-50"
-                >
-                  {isUploading ? <Loader2 className="w-6 h-6 animate-spin text-brand-primary mb-1" /> : <Upload className="w-6 h-6 text-text-muted group-hover:text-brand-primary mb-1" />}
-                  <span className="text-[10px] font-bold text-text-secondary group-hover:text-brand-primary uppercase tracking-wider">{isUploading ? 'Uploading...' : 'Upload'}</span>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleFileChange}
-                  />
-                </button>
-              </div>
-
-              {photos.length > 0 && (
-                <div className="grid grid-cols-3 gap-2">
-                  {photos.map((p, idx) => (
-                    <div key={idx} className="relative rounded-xl overflow-hidden aspect-square border border-border-custom">
-                      <img src={p} alt={`Captured ${idx}`} className="w-full h-full object-cover" />
-                      {!submitting && (
-                        <button
-                          type="button"
-                          onClick={() => setPhotos(prev => prev.filter((_, i) => i !== idx))}
-                          className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full backdrop-blur-md hover:bg-black/70 transition-all"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                  <button
+                    type="button"
+                    disabled={isUploading}
+                    onClick={() => fileInputRefs[index].current?.click()}
+                    className="flex flex-col items-center justify-center p-4 bg-page-bg border-2 border-dashed border-border-custom rounded-2xl hover:bg-brand-light hover:border-brand-primary/30 transition-all group disabled:opacity-50"
+                  >
+                    {isUploading && activeCameraSection === index ? <Loader2 className="w-6 h-6 animate-spin text-brand-primary mb-1" /> : <Upload className="w-6 h-6 text-text-muted group-hover:text-brand-primary mb-1" />}
+                    <span className="text-[10px] font-bold text-text-secondary group-hover:text-brand-primary uppercase tracking-wider">{isUploading && activeCameraSection === index ? 'Uploading...' : 'Upload'}</span>
+                    <input
+                      ref={fileInputRefs[index]}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleFileChange(e, index)}
+                    />
+                  </button>
                 </div>
-              )}
-            </div>
+
+                {images[index] && (
+                  <div className="relative rounded-xl overflow-hidden aspect-video border border-border-custom bg-page-bg">
+                    <img src={images[index]!} alt={`Image-${index + 1}`} className="w-full h-full object-contain" />
+                    {!submitting && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newImages = [...images];
+                          newImages[index] = null;
+                          setImages(newImages);
+                        }}
+                        className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full backdrop-blur-md hover:bg-black/70 transition-all shadow-lg"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
 
             {/* Error Message */}
             {error && (
@@ -364,17 +379,27 @@ export default function GardenCityGuardView() {
 
       <CameraModal
         isOpen={isCameraOpen}
-        onClose={() => setIsCameraOpen(false)}
+        onClose={() => {
+          setIsCameraOpen(false);
+          setActiveCameraSection(null);
+        }}
         onCapture={async (imageData) => {
           if (!selectedGuard) {
             alert("Please select your name first.");
             return;
           }
+          if (activeCameraSection === null) return;
+          
           setIsUploading(true);
           try {
             const compressed = await compressImage(imageData);
             const url = await firebaseService.uploadImage(compressed, selectedGuard);
-            setPhotos([url]);
+            const newImages = [...images];
+            newImages[activeCameraSection] = url;
+            setImages(newImages);
+            const newNames = [...imageNames];
+            newNames[activeCameraSection] = `camera_capture_${new Date().getTime()}.jpg`;
+            setImageNames(newNames);
           } catch (err) {
             console.error("Capture upload failed", err);
             alert("Failed to upload captured image.");

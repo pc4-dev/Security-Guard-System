@@ -23,30 +23,31 @@ import { firebaseService } from '../services/firebaseService';
 import { PatrolLog, DashboardStats } from '../types';
 import { cn } from '../utils';
 
-export default function AdminView() {
+export default function SchoolAdminView() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [logs, setLogs] = useState<PatrolLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterDate, setFilterDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [filterGuard, setFilterGuard] = useState('');
-  const [filterSite, setFilterSite] = useState('');
-  const [filterRound, setFilterRound] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [exporting, setExporting] = useState(false);
   const [selectedLog, setSelectedLog] = useState<PatrolLog | null>(null);
+
+  const selectedSite = "School";
 
   useEffect(() => {
     setLoading(true);
-    const unsubscribe = firebaseService.subscribeToPatrolLogs((newLogs) => {
-      setLogs(newLogs);
+    const unsubscribe = firebaseService.subscribeToPatrolLogs((allLogs) => {
+      // Filter logs for School site only
+      const schoolLogs = allLogs.filter(log => log.siteName === selectedSite);
+      setLogs(schoolLogs);
       
-      // Calculate stats from logs
+      // Calculate stats from school logs
       const today = new Date().toDateString();
-      const todayLogs = newLogs.filter(log => new Date(log.timestamp).toDateString() === today);
+      const todayLogs = schoolLogs.filter(log => new Date(log.timestamp).toDateString() === today);
       
       setStats({
-        totalGuardsOnDuty: 2, // Mock or fetch from guards collection
-        totalCheckpoints: 145, // Mock or fetch from checkpoints collection
+        totalGuardsOnDuty: Array.from(new Set(schoolLogs.map(l => l.guardId))).length,
+        totalCheckpoints: 10, // Fixed for School as per portal setup
         totalSubmissionsToday: todayLogs.length,
         missedCheckpoints: 0,
         recentActivity: todayLogs.slice(0, 5)
@@ -76,13 +77,10 @@ export default function AdminView() {
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
-      
-      // Add clickable hyperlinks to the image link columns
       const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
       const headerRow = 0;
       const imageCols: number[] = [];
 
-      // Find the indices of the image link columns
       for (let C = range.s.c; C <= range.e.c; ++C) {
         const address = XLSX.utils.encode_col(C) + (headerRow + 1);
         if (ws[address] && ws[address].v && ws[address].v.toString().includes('Checkpoint-') && ws[address].v.toString().includes('Image')) {
@@ -96,7 +94,6 @@ export default function AdminView() {
             const address = XLSX.utils.encode_col(colIdx) + (R + 1);
             const cell = ws[address];
             if (cell && cell.v) {
-              // Set the cell as a hyperlink
               cell.l = { Target: cell.v, Tooltip: 'Click to view photo' };
               cell.s = { font: { color: { rgb: "0563C1" }, underline: true } };
             }
@@ -105,9 +102,9 @@ export default function AdminView() {
       }
 
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Patrol Logs');
+      XLSX.utils.book_append_sheet(wb, ws, 'School Patrol Logs');
       
-      const fileName = `Patrol_Logs_${filterDate}.xlsx`;
+      const fileName = `School_Patrol_Logs_${filterDate}.xlsx`;
       XLSX.writeFile(wb, fileName);
     } catch (err) {
       console.error('Excel export failed', err);
@@ -116,19 +113,15 @@ export default function AdminView() {
   };
 
   const uniqueGuards = Array.from(new Set(logs.map(log => log.guardName))).sort();
-  const uniqueSites = Array.from(new Set(logs.map(log => log.siteName))).sort();
-  const uniqueRounds = Array.from(new Set(logs.filter(log => log.round).map(log => log.round))).sort();
 
   const filteredLogs = logs.filter(log => {
     const matchesDate = format(new Date(log.timestamp), 'yyyy-MM-dd') === filterDate;
     const matchesGuard = filterGuard === '' || log.guardName === filterGuard;
-    const matchesSite = filterSite === '' || log.siteName === filterSite;
-    const matchesRound = filterRound === '' || log.round === filterRound;
     const matchesSearch = searchQuery === '' || 
       log.checkpointName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.guardName.toLowerCase().includes(searchQuery.toLowerCase());
     
-    return matchesDate && matchesGuard && matchesSite && matchesRound && matchesSearch;
+    return matchesDate && matchesGuard && matchesSearch;
   });
 
   const chartData = Array.from({ length: 8 }, (_, i) => {
@@ -153,8 +146,8 @@ export default function AdminView() {
     <div className="space-y-8 font-sans">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-text-primary">Operations Dashboard</h2>
-          <p className="text-text-secondary">Real-time monitoring for Neoteric Properties, Gwalior.</p>
+          <h2 className="text-3xl font-bold text-text-primary">School Security Dashboard</h2>
+          <p className="text-text-secondary">Exclusive monitoring for School site patrol data.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-border-custom shadow-sm">
@@ -178,10 +171,10 @@ export default function AdminView() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Guards On Duty', value: stats?.totalGuardsOnDuty, icon: Users, color: 'text-status-blue', bg: 'bg-status-blue-bg' },
-          { label: 'Active Checkpoints', value: stats?.totalCheckpoints, icon: MapPin, color: 'text-status-purple', bg: 'bg-status-purple-bg' },
-          { label: 'Today\'s Submissions', value: stats?.totalSubmissionsToday, icon: CheckCircle, color: 'text-status-green', bg: 'bg-status-green-bg' },
-          { label: 'Missed Rounds', value: stats?.missedCheckpoints, icon: AlertTriangle, color: 'text-status-red', bg: 'bg-status-red-bg' },
+          { label: 'Guards Active', value: stats?.totalGuardsOnDuty, icon: Users, color: 'text-status-blue', bg: 'bg-status-blue-bg' },
+          { label: 'School Checkpoints', value: stats?.totalCheckpoints, icon: MapPin, color: 'text-status-purple', bg: 'bg-status-purple-bg' },
+          { label: 'School Submissions', value: stats?.totalSubmissionsToday, icon: CheckCircle, color: 'text-status-green', bg: 'bg-status-green-bg' },
+          { label: 'Alerts', value: 0, icon: AlertTriangle, color: 'text-status-red', bg: 'bg-status-red-bg' },
         ].map((item, i) => (
           <motion.div
             key={i}
@@ -203,11 +196,7 @@ export default function AdminView() {
         {/* Activity Chart */}
         <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-border-custom shadow-sm">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xl font-bold text-text-primary">Patrol Frequency</h3>
-            <select className="bg-page-bg border border-border-custom rounded-lg px-3 py-1 text-sm outline-none font-bold text-text-secondary">
-              <option>Last 24 Hours</option>
-              <option>Last 7 Days</option>
-            </select>
+            <h3 className="text-xl font-bold text-text-primary">School Patrol Frequency</h3>
           </div>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -233,7 +222,7 @@ export default function AdminView() {
         <div className="bg-white p-8 rounded-3xl border border-border-custom shadow-sm">
           <h3 className="text-xl font-bold text-text-primary mb-6 flex items-center gap-2">
             <div className="w-2 h-2 bg-status-green rounded-full animate-pulse" />
-            Live Activity
+            Live School Activity
           </h3>
           <div className="space-y-6">
             {stats?.recentActivity.length ? stats.recentActivity.map((log, i) => {
@@ -267,16 +256,13 @@ export default function AdminView() {
             <p className="text-text-muted text-sm italic">No recent activity</p>
           )}
           </div>
-          <button className="w-full mt-8 py-3 text-sm font-bold text-brand-primary bg-brand-light rounded-xl hover:bg-brand-primary hover:text-white transition-all">
-            View All Activity
-          </button>
         </div>
       </div>
 
       {/* Patrol Report Table */}
       <div className="bg-white rounded-3xl border border-border-custom shadow-sm overflow-hidden">
         <div className="p-8 border-b border-border-custom flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <h3 className="text-xl font-bold text-text-primary">Patrol Logs</h3>
+          <h3 className="text-xl font-bold text-text-primary">School Patrol Logs</h3>
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
@@ -289,32 +275,6 @@ export default function AdminView() {
               />
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-3 py-2 bg-page-bg border border-border-custom rounded-xl text-sm text-text-secondary font-bold">
-                <Filter className="w-4 h-4" />
-                <select 
-                  value={filterSite} 
-                  onChange={(e) => setFilterSite(e.target.value)}
-                  className="bg-transparent outline-none cursor-pointer"
-                >
-                  <option value="">All Sites</option>
-                  {uniqueSites.map(site => (
-                    <option key={site} value={site}>{site}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 bg-page-bg border border-border-custom rounded-xl text-sm text-text-secondary font-bold">
-                <Clock className="w-4 h-4" />
-                <select 
-                  value={filterRound} 
-                  onChange={(e) => setFilterRound(e.target.value)}
-                  className="bg-transparent outline-none cursor-pointer"
-                >
-                  <option value="">All Rounds</option>
-                  {uniqueRounds.map(round => (
-                    <option key={round} value={round}>{round}</option>
-                  ))}
-                </select>
-              </div>
               <div className="flex items-center gap-2 px-3 py-2 bg-page-bg border border-border-custom rounded-xl text-sm text-text-secondary font-bold">
                 <Users className="w-4 h-4" />
                 <select 
@@ -337,12 +297,8 @@ export default function AdminView() {
             <thead>
               <tr className="bg-page-bg border-b border-border-custom">
                 <th className="px-8 py-4 text-[10px] font-black text-text-secondary uppercase tracking-widest">Guard</th>
-                <th className="px-8 py-4 text-[10px] font-black text-text-secondary uppercase tracking-widest">Site & Round</th>
-                <th className="px-8 py-4 text-[10px] font-black text-text-secondary uppercase tracking-widest">Checkpoint</th>
                 <th className="px-8 py-4 text-[10px] font-black text-text-secondary uppercase tracking-widest">Date & Time</th>
-                <th className="px-8 py-4 text-[10px] font-black text-text-secondary uppercase tracking-widest">Notes</th>
                 <th className="px-8 py-4 text-[10px] font-black text-text-secondary uppercase tracking-widest">Evidence</th>
-                <th className="px-8 py-4 text-[10px] font-black text-text-secondary uppercase tracking-widest">Status</th>
                 <th className="px-8 py-4 text-[10px] font-black text-text-secondary uppercase tracking-widest">Action</th>
               </tr>
             </thead>
@@ -362,18 +318,6 @@ export default function AdminView() {
                     </div>
                   </td>
                   <td className="px-8 py-6">
-                    <p className="text-sm font-bold text-text-primary">{log.siteName}</p>
-                    {log.round && (
-                      <span className="text-[10px] font-black text-brand-primary uppercase tracking-wider bg-brand-light px-2 py-0.5 rounded-md mt-1 inline-block">
-                        {log.round}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-8 py-6">
-                    <p className="text-sm font-bold text-text-primary">{log.checkpointName}</p>
-                    <p className="text-xs text-text-secondary">ID: {log.checkpointId}</p>
-                  </td>
-                  <td className="px-8 py-6">
                     <div className="flex flex-col text-text-secondary">
                       <div className="flex items-center gap-2">
                         <Clock className="w-3 h-3" />
@@ -384,15 +328,6 @@ export default function AdminView() {
                         <span className="text-[10px] font-medium opacity-70">{format(new Date(log.timestamp), 'MMM dd, yyyy')}</span>
                       </div>
                     </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    {log.notes ? (
-                      <div className="max-w-[150px]">
-                        <p className="text-xs text-text-primary italic line-clamp-2">"{log.notes}"</p>
-                      </div>
-                    ) : (
-                      <span className="text-[10px] text-text-muted italic opacity-50">No notes</span>
-                    )}
                   </td>
                   <td className="px-8 py-6">
                     <div className="flex gap-1">
@@ -425,14 +360,6 @@ export default function AdminView() {
                     </div>
                   </td>
                   <td className="px-8 py-6">
-                    <span className={cn(
-                      "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
-                      log.status === 'Completed' ? "bg-status-green-bg text-status-green" : "bg-status-red-bg text-status-red"
-                    )}>
-                      {log.status}
-                    </span>
-                  </td>
-                  <td className="px-8 py-6">
                     <button 
                       onClick={() => setSelectedLog(log)}
                       className="p-2 text-text-muted hover:text-brand-primary transition-colors"
@@ -441,11 +368,11 @@ export default function AdminView() {
                     </button>
                   </td>
                 </tr>
-              );
+                );
             }) : (
               <tr>
-                <td colSpan={8} className="px-8 py-12 text-center text-text-muted italic font-medium">
-                  No patrol logs found for the selected filters.
+                <td colSpan={4} className="px-8 py-12 text-center text-text-muted italic font-medium">
+                  No School patrol logs found for the selected filters.
                 </td>
               </tr>
             )}
@@ -468,7 +395,7 @@ export default function AdminView() {
                   <Shield className="w-6 h-6 text-brand-primary" />
                 </div>
                 <div>
-                  <h4 className="text-2xl font-black text-text-primary">Patrol Verification</h4>
+                  <h4 className="text-2xl font-black text-text-primary">School Patrol Verification</h4>
                   <p className="text-text-secondary text-sm">Detailed submission report</p>
                 </div>
               </div>
@@ -538,15 +465,6 @@ export default function AdminView() {
                     ))}
                   </div>
                 </div>
-
-                {selectedLog.notes && (
-                  <div>
-                    <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Guard Notes</p>
-                    <div className="bg-page-bg p-4 rounded-2xl border border-border-custom">
-                      <p className="text-sm text-text-primary italic">"{selectedLog.notes}"</p>
-                    </div>
-                  </div>
-                )}
 
                 <div className="flex items-center justify-between p-4 bg-status-green-bg rounded-2xl border border-status-green/10">
                   <div className="flex items-center gap-2">

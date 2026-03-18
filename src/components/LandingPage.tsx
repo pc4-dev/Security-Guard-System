@@ -3,7 +3,7 @@ import { Shield, UserCheck, LayoutDashboard, ArrowRight, MapPin, Building2 } fro
 import { motion } from 'motion/react';
 
 interface LandingPageProps {
-  onSelect: (view: 'guard' | 'admin' | 'garden-city') => void;
+  onSelect: (view: 'guard' | 'admin' | 'garden-city' | 'school' | 'school-admin') => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onSelect }) => {
@@ -65,6 +65,44 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelect }) => {
         </motion.button>
 
         {/* Admin Dashboard Card */}
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => onSelect('school')}
+          className="group bg-brand-light/20 p-8 rounded-[2rem] border border-brand-primary/10 shadow-xl shadow-brand-primary/5 text-left transition-all hover:border-brand-primary/30"
+        >
+          <div className="w-16 h-16 bg-brand-primary rounded-2xl flex items-center justify-center mb-6 group-hover:bg-brand-primary/90 transition-colors shadow-lg shadow-brand-primary/20">
+            <Shield className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2 text-brand-primary">School Security</h2>
+          <p className="text-text-secondary mb-8 text-sm leading-relaxed">
+            Dedicated portal for School site. Pre-configured for local checkpoints and rapid patrol reporting.
+          </p>
+          <div className="flex items-center gap-2 text-brand-primary font-bold text-sm uppercase tracking-wider">
+            Open Site Portal <ArrowRight className="w-4 h-4" />
+          </div>
+        </motion.button>
+
+        {/* School Admin Dashboard Card */}
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => onSelect('school-admin')}
+          className="group bg-brand-light/20 p-8 rounded-[2rem] border border-brand-primary/10 shadow-xl shadow-brand-primary/5 text-left transition-all hover:border-brand-primary/30"
+        >
+          <div className="w-16 h-16 bg-brand-primary rounded-2xl flex items-center justify-center mb-6 group-hover:bg-brand-primary/90 transition-colors shadow-lg shadow-brand-primary/20">
+            <Shield className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2 text-brand-primary">School Admin</h2>
+          <p className="text-text-secondary mb-8 text-sm leading-relaxed">
+            Exclusive dashboard for School site. Monitor patrols, export reports, and track live activity for School only.
+          </p>
+          <div className="flex items-center gap-2 text-brand-primary font-bold text-sm uppercase tracking-wider">
+            Open Dashboard <ArrowRight className="w-4 h-4" />
+          </div>
+        </motion.button>
+
+        {/* Main Admin Dashboard Card */}
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}

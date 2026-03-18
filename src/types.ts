@@ -20,7 +20,13 @@ export interface PatrolLog {
   checkpointId: string;
   checkpointName: string;
   siteName: string;
-  photoUrls: string[];
+  image1Url?: string;
+  image2Url?: string;
+  image3Url?: string;
+  image4Url?: string;
+  image5Url?: string;
+  image6Url?: string;
+  photoUrls: string[]; // Keeping for backward compatibility
   gpsLocation?: {
     latitude: number;
     longitude: number;
@@ -29,6 +35,7 @@ export interface PatrolLog {
   status: 'Completed' | 'Missed';
   round: string;
   notes?: string;
+  imageNames?: string[];
 }
 
 export interface Incident {

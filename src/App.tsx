@@ -3,6 +3,8 @@ import { Shield, LayoutDashboard, UserCheck, AlertTriangle, Menu, X, LogIn } fro
 import { motion, AnimatePresence } from 'motion/react';
 import GuardView from './components/GuardView';
 import GardenCityGuardView from './components/GardenCityGuardView';
+import SchoolGuardView from './components/SchoolGuardView';
+import SchoolAdminView from './components/SchoolAdminView';
 import AdminView from './components/AdminView';
 import { LandingPage } from './components/LandingPage';
 import { cn } from './utils';
@@ -13,7 +15,7 @@ import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, User } from 'f
 import { firebaseService } from './services/firebaseService';
 import { api } from './api';
 
-type View = 'home' | 'guard' | 'admin' | 'garden-city';
+type View = 'home' | 'guard' | 'admin' | 'garden-city' | 'school' | 'school-admin';
 
 function Login({ onLogin }: { onLogin: () => void }) {
   const [error, setError] = useState<string | null>(null);
@@ -88,6 +90,12 @@ export default function App() {
   const [isAuthReady, setIsAuthReady] = useState(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get('view') as View;
+    if (viewParam && ['home', 'guard', 'admin', 'garden-city', 'school', 'school-admin'].includes(viewParam)) {
+      setView(viewParam);
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setIsAuthReady(true);
@@ -107,6 +115,17 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  const handleSetView = (newView: View) => {
+    setView(newView);
+    const url = new URL(window.location.href);
+    if (newView === 'home') {
+      url.searchParams.delete('view');
+    } else {
+      url.searchParams.set('view', newView);
+    }
+    window.history.pushState({}, '', url);
+  };
+
   if (!isAuthReady) {
     return (
       <div className="min-h-screen bg-page-bg flex items-center justify-center">
@@ -120,7 +139,7 @@ export default function App() {
   }
 
   if (view === 'home') {
-    return <LandingPage onSelect={setView} />;
+    return <LandingPage onSelect={handleSetView} />;
   }
 
   return (
@@ -158,7 +177,7 @@ export default function App() {
 
             <nav className="space-y-2">
               <div className="px-4 py-2 text-[10px] font-black text-text-muted uppercase tracking-widest">
-                {view === 'admin' ? 'Admin Dashboard' : 'Guard Portal'}
+                {(view === 'admin' || view === 'school-admin') ? 'Admin Dashboard' : 'Guard Portal'}
               </div>
               
               {view === 'garden-city' && (
@@ -169,14 +188,34 @@ export default function App() {
                   </div>
                 </div>
               )}
+
+              {view === 'school' && (
+                <div className="px-4 py-2 mb-2">
+                  <div className="bg-brand-primary/10 border border-brand-primary/20 rounded-xl p-3">
+                    <p className="text-[10px] font-black text-brand-primary uppercase tracking-widest mb-1">Active Site</p>
+                    <p className="text-xs font-bold text-white">School</p>
+                  </div>
+                </div>
+              )}
+
+              {view === 'school-admin' && (
+                <div className="px-4 py-2 mb-2">
+                  <div className="bg-brand-primary/10 border border-brand-primary/20 rounded-xl p-3">
+                    <p className="text-[10px] font-black text-brand-primary uppercase tracking-widest mb-1">Active Site</p>
+                    <p className="text-xs font-bold text-white">School Admin</p>
+                  </div>
+                </div>
+              )}
               
-              <button
-                onClick={() => { setView('home'); setIsSidebarOpen(false); }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-text-muted hover:bg-white/5 hover:text-white"
-              >
-                <Home className="w-5 h-5" />
-                <span className="font-medium">Switch Portal</span>
-              </button>
+              {view !== 'school' && (
+                <button
+                  onClick={() => handleSetView('home')}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-text-muted hover:bg-white/5"
+                >
+                  <Home className="w-5 h-5" />
+                  <span className="font-medium">Home</span>
+                </button>
+              )}
 
               <button
                 onClick={() => { auth.signOut(); setIsSidebarOpen(false); }}
@@ -215,6 +254,8 @@ export default function App() {
             >
               {view === 'guard' ? <GuardView /> : 
                view === 'garden-city' ? <GardenCityGuardView /> :
+               view === 'school' ? <SchoolGuardView /> :
+               view === 'school-admin' ? <SchoolAdminView /> :
                <AdminView />}
             </motion.div>
           </AnimatePresence>

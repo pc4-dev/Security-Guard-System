@@ -296,11 +296,9 @@ export const firebaseService = {
   // Seed data if empty
   async seedInitialData(guards: Guard[], checkpoints: Checkpoint[]) {
     try {
-      const guardsSnapshot = await getDocs(collection(db, 'guards'));
-      if (guardsSnapshot.empty) {
-        for (const guard of guards) {
-          await setDoc(doc(db, 'guards', guard.id), guard);
-        }
+      // Seed guards - use setDoc with merge to ensure all guards from API are present
+      for (const guard of guards) {
+        await setDoc(doc(db, 'guards', guard.id), guard, { merge: true });
       }
 
       const checkpointsSnapshot = await getDocs(collection(db, 'checkpoints'));
