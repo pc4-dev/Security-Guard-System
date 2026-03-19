@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Send, CheckCircle2, Loader2, User, Building2, Camera, ClipboardCheck, Image as ImageIcon, Upload, X } from 'lucide-react';
+import { MapPin, Send, CheckCircle2, Loader2, User, Building2, Camera, ClipboardCheck, Image as ImageIcon, Upload, X, RefreshCw, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { firebaseService } from '../services/firebaseService';
 import { Checkpoint, Guard } from '../types';
@@ -120,14 +120,28 @@ export default function GardenCityGuardView() {
     }
   };
 
+  const formatTimestamp = () => {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    let hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    const strHours = String(hours).padStart(2, '0');
+    return `${day}-${month}-${year} ${strHours}:${minutes} ${ampm}`;
+  };
+
   const compressImage = (base64Str: string, addTimestamp: boolean = false): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
       img.src = base64Str;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 640;
-        const MAX_HEIGHT = 640;
+        const MAX_WIDTH = 1280;
+        const MAX_HEIGHT = 1280;
         let width = img.width;
         let height = img.height;
 
@@ -150,20 +164,19 @@ export default function GardenCityGuardView() {
           ctx.drawImage(img, 0, 0, width, height);
           
           if (addTimestamp) {
-            const now = new Date();
-            const timestamp = now.toLocaleString();
-            ctx.font = 'bold 16px sans-serif';
+            const timestamp = formatTimestamp();
+            ctx.font = 'bold 24px sans-serif';
             ctx.fillStyle = 'white';
             ctx.strokeStyle = 'black';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 4;
             const textWidth = ctx.measureText(timestamp).width;
-            const x = width - textWidth - 15;
-            const y = height - 15;
+            const x = width - textWidth - 20;
+            const y = height - 20;
             ctx.strokeText(timestamp, x, y);
             ctx.fillText(timestamp, x, y);
           }
         }
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.5);
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
         resolve(compressedBase64);
       };
     });
@@ -321,20 +334,45 @@ export default function GardenCityGuardView() {
                 </div>
 
                 {images[index] && (
-                  <div className="relative rounded-xl overflow-hidden aspect-video border border-border-custom bg-page-bg">
-                    <img src={images[index]!} alt={`Image-${index + 1}`} className="w-full h-full object-contain" />
+                  <div className="p-4 bg-brand-light/20 border border-brand-primary/10 rounded-2xl flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
+                        <Check className="w-5 h-5 text-green-500" />
+                      </div>
+                      <div className="overflow-hidden">
+                        <p className="text-[10px] font-black text-brand-primary uppercase tracking-widest">Image Confirmed</p>
+                        <p className="text-sm font-bold text-text-primary truncate">{imageNames[index]}</p>
+                      </div>
+                    </div>
                     {!submitting && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const newImages = [...images];
-                          newImages[index] = null;
-                          setImages(newImages);
-                        }}
-                        className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full backdrop-blur-md hover:bg-black/70 transition-all shadow-lg"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveCameraSection(index);
+                            setIsCameraOpen(true);
+                          }}
+                          className="p-2 bg-white text-brand-primary rounded-xl shadow-sm border border-border-custom hover:bg-brand-light transition-all"
+                          title="Retake Photo"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newImages = [...images];
+                            newImages[index] = null;
+                            setImages(newImages);
+                            const newNames = [...imageNames];
+                            newNames[index] = null;
+                            setImageNames(newNames);
+                          }}
+                          className="p-2 bg-white text-red-500 rounded-xl shadow-sm border border-border-custom hover:bg-red-50 transition-all"
+                          title="Remove Photo"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}
@@ -416,8 +454,9 @@ export default function GardenCityGuardView() {
             const newImages = [...images];
             newImages[activeCameraSection] = url;
             setImages(newImages);
+            const timestamp = formatTimestamp();
             const newNames = [...imageNames];
-            newNames[activeCameraSection] = `camera_capture_${new Date().getTime()}.jpg`;
+            newNames[activeCameraSection] = `camera_capture_${timestamp.replace(/[: ]/g, '_')}.jpg`;
             setImageNames(newNames);
           } catch (err) {
             console.error("Capture upload failed", err);

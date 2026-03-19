@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Send, CheckCircle2, Loader2, User, Building2, Camera, ClipboardCheck, Image as ImageIcon, Upload, X } from 'lucide-react';
+import { MapPin, Send, CheckCircle2, Loader2, User, Building2, Camera, ClipboardCheck, Image as ImageIcon, Upload, X, RefreshCw, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { firebaseService } from '../services/firebaseService';
 import { Checkpoint, Guard } from '../types';
@@ -182,14 +182,26 @@ export default function GuardView() {
     }
   };
 
+  const formatTimestamp = (date: Date) => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    const strHours = String(displayHours).padStart(2, '0');
+    return `${day}-${month}-${year} ${strHours}:${minutes} ${ampm}`;
+  };
+
   const compressImage = (base64Str: string, addTimestamp: boolean = false): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
       img.src = base64Str;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 640;
-        const MAX_HEIGHT = 640;
+        const MAX_WIDTH = 1280;
+        const MAX_HEIGHT = 1280;
         let width = img.width;
         let height = img.height;
 
@@ -212,22 +224,21 @@ export default function GuardView() {
           ctx.drawImage(img, 0, 0, width, height);
           
           if (addTimestamp) {
-            const now = new Date();
-            const timestamp = now.toLocaleString();
-            ctx.font = 'bold 16px sans-serif';
+            const timestamp = formatTimestamp(new Date());
+            ctx.font = 'bold 24px sans-serif';
             ctx.fillStyle = 'white';
             ctx.strokeStyle = 'black';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 4;
             const textWidth = ctx.measureText(timestamp).width;
-            const x = width - textWidth - 15;
-            const y = height - 15;
+            const x = width - textWidth - 20;
+            const y = height - 20;
             ctx.strokeText(timestamp, x, y);
             ctx.fillText(timestamp, x, y);
           }
         }
         
-        // Compress to JPEG with 0.5 quality for faster uploads
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.5);
+        // Compress to JPEG with 0.8 quality for better visual fidelity
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
         resolve(compressedBase64);
       };
     });
@@ -378,45 +389,66 @@ export default function GuardView() {
                     </div>
 
                     {images[idx] && (
-                      <div className="relative rounded-xl overflow-hidden aspect-video border border-border-custom bg-page-bg">
-                        <img src={images[idx]!} alt={`Image-${idx + 1} Preview`} className="w-full h-full object-contain" />
+                      <div className="mt-2 flex items-center gap-2 p-2 bg-page-bg border border-border-custom rounded-xl relative group">
+                        <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+                          <ImageIcon className="w-4 h-4 text-red-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-bold text-text-primary truncate">{imageNames[idx]}</p>
+                        </div>
                         
+                        {!submitting && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveCameraSection(idx);
+                                setIsCameraOpen(true);
+                              }}
+                              className="p-1 text-brand-primary hover:bg-brand-light rounded-md transition-colors"
+                              title="Retake Photo"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setImages(prev => {
+                                  const next = [...prev];
+                                  next[idx] = null;
+                                  return next;
+                                });
+                                setImageNames(prev => {
+                                  const next = [...prev];
+                                  next[idx] = null;
+                                  return next;
+                                });
+                              }}
+                              className="p-1 text-text-muted hover:text-status-red transition-colors"
+                              title="Remove Photo"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+
                         {/* Progress Overlay */}
                         {submitting && photoProgress[images.slice(0, idx).filter(p => p !== null).length] !== undefined && photoProgress[images.slice(0, idx).filter(p => p !== null).length] < 100 && (
-                          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center p-2">
-                            <div className="w-48 h-1 bg-white/20 rounded-full overflow-hidden mb-1">
+                          <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] rounded-xl flex items-center px-3">
+                            <div className="flex-1 h-1 bg-page-bg rounded-full overflow-hidden">
                               <motion.div 
                                 className="h-full bg-brand-primary"
                                 initial={{ width: 0 }}
                                 animate={{ width: `${photoProgress[images.slice(0, idx).filter(p => p !== null).length]}%` }}
                               />
                             </div>
-                            <span className="text-[8px] font-black text-white uppercase tracking-widest">
-                              {Math.round(photoProgress[images.slice(0, idx).filter(p => p !== null).length])}%
-                            </span>
                           </div>
                         )}
 
                         {submitting && photoProgress[images.slice(0, idx).filter(p => p !== null).length] === 100 && (
-                          <div className="absolute inset-0 bg-status-green/20 backdrop-blur-[1px] flex items-center justify-center">
-                            <div className="bg-white rounded-full p-1 shadow-lg">
-                              <CheckCircle2 className="w-4 h-4 text-status-green" />
-                            </div>
+                          <div className="absolute inset-0 bg-status-green/5 backdrop-blur-[1px] rounded-xl flex items-center justify-end px-3">
+                            <CheckCircle2 className="w-3 h-3 text-status-green" />
                           </div>
-                        )}
-
-                        {!submitting && (
-                          <button
-                            type="button"
-                            onClick={() => setImages(prev => {
-                              const next = [...prev];
-                              next[idx] = null;
-                              return next;
-                            })}
-                            className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full backdrop-blur-md hover:bg-black/70 transition-all shadow-lg"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
                         )}
                       </div>
                     )}
@@ -507,7 +539,8 @@ export default function GuardView() {
         }}
         onCapture={async (imageData) => {
           const compressed = await compressImage(imageData, true);
-          const fileName = `camera_capture_${new Date().getTime()}.jpg`;
+          const timestamp = formatTimestamp(new Date());
+          const fileName = `camera_capture_${timestamp.replace(/[: ]/g, '_')}.jpg`;
           if (activeCameraSection !== null) {
             setImages(prev => {
               const next = [...prev];

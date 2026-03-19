@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Send, CheckCircle2, Loader2, User, Building2, Camera, ClipboardCheck, Image as ImageIcon, Upload, X } from 'lucide-react';
+import { MapPin, Send, CheckCircle2, Loader2, User, Building2, Camera, ClipboardCheck, Image as ImageIcon, Upload, X, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { firebaseService } from '../services/firebaseService';
 import { Checkpoint, Guard } from '../types';
@@ -177,14 +177,26 @@ export default function SchoolGuardView() {
     }
   };
 
+  const formatTimestamp = (date: Date) => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    const strHours = String(displayHours).padStart(2, '0');
+    return `${day}-${month}-${year} ${strHours}:${minutes} ${ampm}`;
+  };
+
   const compressImage = (base64Str: string, addTimestamp: boolean = false): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
       img.src = base64Str;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 640;
-        const MAX_HEIGHT = 640;
+        const MAX_WIDTH = 1280; // Increased for better quality
+        const MAX_HEIGHT = 1280;
         let width = img.width;
         let height = img.height;
 
@@ -207,21 +219,20 @@ export default function SchoolGuardView() {
           ctx.drawImage(img, 0, 0, width, height);
           
           if (addTimestamp) {
-            const now = new Date();
-            const timestamp = now.toLocaleString();
-            ctx.font = 'bold 16px sans-serif';
+            const timestamp = formatTimestamp(new Date());
+            ctx.font = 'bold 24px sans-serif'; // Larger font for higher resolution
             ctx.fillStyle = 'white';
             ctx.strokeStyle = 'black';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 4;
             const textWidth = ctx.measureText(timestamp).width;
-            const x = width - textWidth - 15;
-            const y = height - 15;
+            const x = width - textWidth - 30;
+            const y = height - 30;
             ctx.strokeText(timestamp, x, y);
             ctx.fillText(timestamp, x, y);
           }
         }
         
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.5);
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8); // Higher quality
         resolve(compressedBase64);
       };
     });
@@ -332,7 +343,7 @@ export default function SchoolGuardView() {
                         className="flex items-center justify-center gap-2 p-3 bg-page-bg border-2 border-dashed border-border-custom rounded-xl hover:bg-brand-light hover:border-brand-primary/30 transition-all group"
                       >
                         <Camera className="w-5 h-5 text-text-muted group-hover:text-brand-primary" />
-                        <span className="text-xs font-bold text-text-secondary group-hover:text-brand-primary uppercase tracking-wider">Live Camera</span>
+                        <span className="text-xs font-bold text-text-secondary group-hover:text-brand-primary uppercase tracking-wider">Open Camera</span>
                       </button>
 
                       <button
@@ -362,24 +373,38 @@ export default function SchoolGuardView() {
                         </div>
                         
                         {!submitting && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setImages(prev => {
-                                const next = [...prev];
-                                next[idx] = null;
-                                return next;
-                              });
-                              setImageNames(prev => {
-                                const next = [...prev];
-                                next[idx] = null;
-                                return next;
-                              });
-                            }}
-                            className="p-1 text-text-muted hover:text-status-red transition-colors"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveCameraSection(idx);
+                                setIsCameraOpen(true);
+                              }}
+                              className="p-1 text-brand-primary hover:bg-brand-light rounded-md transition-colors"
+                              title="Retake Photo"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setImages(prev => {
+                                  const next = [...prev];
+                                  next[idx] = null;
+                                  return next;
+                                });
+                                setImageNames(prev => {
+                                  const next = [...prev];
+                                  next[idx] = null;
+                                  return next;
+                                });
+                              }}
+                              className="p-1 text-text-muted hover:text-status-red transition-colors"
+                              title="Remove Photo"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         )}
 
                         {/* Progress Overlay */}
@@ -489,7 +514,8 @@ export default function SchoolGuardView() {
         }}
         onCapture={async (imageData) => {
           const compressed = await compressImage(imageData, true);
-          const fileName = `camera_capture_${new Date().getTime()}.jpg`;
+          const timestamp = formatTimestamp(new Date());
+          const fileName = `camera_capture_${timestamp.replace(/[: ]/g, '_')}.jpg`;
           if (activeCameraSection !== null) {
             setImages(prev => {
               const next = [...prev];
