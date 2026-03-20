@@ -76,12 +76,12 @@ export default function GardenCityGuardView() {
         checkpointId: round, // Using round (Checkpoint X) as checkpointId
         checkpointName: round, // Using round (Checkpoint X) as checkpointName
         siteName: selectedProject,
-        image1Url: images[0] || '',
-        image2Url: images[1] || '',
-        image3Url: images[2] || '',
-        image4Url: images[3] || '',
-        image5Url: images[4] || '',
-        image6Url: images[5] || '',
+        image1Url: images[0] || null,
+        image2Url: images[1] || null,
+        image3Url: images[2] || null,
+        image4Url: images[3] || null,
+        image5Url: images[4] || null,
+        image6Url: images[5] || null,
         photoUrls: images.filter((url): url is string => !!url),
         status: 'Completed' as const,
         timestamp: new Date().toISOString(),

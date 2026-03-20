@@ -26,6 +26,10 @@ export interface PatrolLog {
   image4Url?: string;
   image5Url?: string;
   image6Url?: string;
+  image7Url?: string;
+  image8Url?: string;
+  image9Url?: string;
+  image10Url?: string;
   photoUrls: string[]; // Keeping for backward compatibility
   gpsLocation?: {
     latitude: number;

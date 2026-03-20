@@ -35,8 +35,8 @@ export default function GuardView() {
   const [selectedGuard, setSelectedGuard] = useState('');
   const [selectedProject, setSelectedProject] = useState('');
   const [round, setRound] = useState('Checkpoint 1');
-  const [images, setImages] = useState<(string | null)[]>([null, null, null, null, null, null]);
-  const [imageNames, setImageNames] = useState<(string | null)[]>([null, null, null, null, null, null]);
+  const [images, setImages] = useState<(string | null)[]>(new Array(10).fill(null));
+  const [imageNames, setImageNames] = useState<(string | null)[]>(new Array(10).fill(null));
   const [activeCameraSection, setActiveCameraSection] = useState<number | null>(null);
 
   const fileInputRefs = [
@@ -46,10 +46,44 @@ export default function GuardView() {
     useRef<HTMLInputElement>(null),
     useRef<HTMLInputElement>(null),
     useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
   ];
 
-  const projects = ["Regal Garden", "Garden City", "Nature Park", "OBC", "Milestone", "Hyde Park", "NG Grand", "School"];
+  const projects = ["Regal Garden", "Garden City", "Nature Park", "OBC", "Milestone", "Hyde Park", "NG Grand", "School", "Tekanpur", "Other"];
+
+  const getProjectImageCount = (project: string) => {
+    switch (project) {
+      case "Nature Park": return 9;
+      case "Tekanpur": return 5;
+      case "School": return 6;
+      case "Regal Garden": return 10;
+      case "Other": return 1;
+      default: return 6;
+    }
+  };
+
+  const imageCount = getProjectImageCount(selectedProject);
+
   const filteredCheckpoints = checkpoints.filter(c => !selectedProject || c.site === selectedProject);
+
+  useEffect(() => {
+    setImages(new Array(10).fill(null));
+    setImageNames(new Array(10).fill(null));
+    
+    if (selectedProject) {
+      const count = getProjectImageCount(selectedProject);
+      if (count > 1) {
+        setRound(`Checkpoint 1 - Checkpoint ${count}`);
+      } else {
+        setRound(`Checkpoint 1`);
+      }
+    } else {
+      setRound('Checkpoint 1');
+    }
+  }, [selectedProject]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -89,14 +123,14 @@ export default function GuardView() {
 
       console.log('Preparing submission for:', { guard: guard?.name, photosCount: photosToUpload.length });
 
-      const imageUrls: string[] = new Array(6).fill('');
+      const imageUrls: string[] = new Array(10).fill('');
       
       if (photosToUpload.length > 0) {
         setUploadProgress('Uploading images...');
         
         // Sequential upload
         let uploadedCount = 0;
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < imageCount; i++) {
           if (images[i]) {
             try {
               console.log(`Uploading Image-${i + 1}...`);
@@ -126,18 +160,22 @@ export default function GuardView() {
         checkpointId: round,
         checkpointName: round,
         siteName: selectedProject,
-        image1Url: imageUrls[0] || undefined,
-        image2Url: imageUrls[1] || undefined,
-        image3Url: imageUrls[2] || undefined,
-        image4Url: imageUrls[3] || undefined,
-        image5Url: imageUrls[4] || undefined,
-        image6Url: imageUrls[5] || undefined,
+        image1Url: imageUrls[0] || null,
+        image2Url: imageUrls[1] || null,
+        image3Url: imageUrls[2] || null,
+        image4Url: imageUrls[3] || null,
+        image5Url: imageUrls[4] || null,
+        image6Url: imageUrls[5] || null,
+        image7Url: imageUrls[6] || null,
+        image8Url: imageUrls[7] || null,
+        image9Url: imageUrls[8] || null,
+        image10Url: imageUrls[9] || null,
         photoUrls: photoUrls,
         status: 'Completed' as const,
         timestamp: new Date().toISOString(),
         round,
         notes: "",
-        imageNames: imageNames.filter((n): n is string => n !== null)
+        imageNames: imageNames.slice(0, imageCount).filter((n): n is string => n !== null)
       };
 
       console.log('Submitting log payload to Firestore:', logPayload);
@@ -152,8 +190,8 @@ export default function GuardView() {
         setSelectedGuard('');
         setRound('Checkpoint 1');
         setUploadProgress('');
-        setImages([null, null, null, null, null, null]);
-        setImageNames([null, null, null, null, null, null]);
+        setImages(new Array(10).fill(null));
+        setImageNames(new Array(10).fill(null));
       }, 3000);
     } catch (err) {
       console.error('Submission error:', err);
@@ -331,28 +369,47 @@ export default function GuardView() {
                     ))}
                   </select>
 
-                  <select
-                    value={round}
-                    onChange={(e) => setRound(e.target.value)}
-                    className="w-full p-4 bg-page-bg border border-border-custom rounded-2xl focus:ring-2 focus:ring-brand-primary outline-none transition-all text-text-primary font-medium"
-                  >
-                    <option>Checkpoint 1</option>
-                    <option>Checkpoint 2</option>
-                    <option>Checkpoint 3</option>
-                    <option>Checkpoint 4</option>
-                    <option>Checkpoint 5</option>
-                    <option>Checkpoint 6</option>
-                    <option>Checkpoint 7</option>
-                    <option>Checkpoint 8</option>
-                    <option>Checkpoint 9</option>
-                    <option>Checkpoint 10</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={round}
+                      onChange={(e) => setRound(e.target.value)}
+                      disabled={!!selectedProject}
+                      className={cn(
+                        "w-full p-4 bg-page-bg border border-border-custom rounded-2xl focus:ring-2 focus:ring-brand-primary outline-none transition-all text-text-primary font-medium",
+                        selectedProject && "opacity-70 cursor-not-allowed bg-gray-50"
+                      )}
+                    >
+                      {!selectedProject ? (
+                        <>
+                          <option>Checkpoint 1</option>
+                          <option>Checkpoint 2</option>
+                          <option>Checkpoint 3</option>
+                          <option>Checkpoint 4</option>
+                          <option>Checkpoint 5</option>
+                          <option>Checkpoint 6</option>
+                          <option>Checkpoint 7</option>
+                          <option>Checkpoint 8</option>
+                          <option>Checkpoint 9</option>
+                          <option>Checkpoint 10</option>
+                        </>
+                      ) : (
+                        <option value={round}>{round}</option>
+                      )}
+                    </select>
+                    {selectedProject && (
+                      <div className="absolute right-12 top-1/2 -translate-y-1/2">
+                        <div className="px-2 py-1 bg-brand-light rounded-lg">
+                          <span className="text-[10px] font-bold text-brand-primary uppercase tracking-wider">Fixed for {selectedProject}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Image Sections 1-6 */}
+              {/* Image Sections */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[0, 1, 2, 3, 4, 5].map((idx) => (
+                {Array.from({ length: imageCount }).map((_, idx) => (
                   <div key={idx} className="bg-white p-6 rounded-3xl border border-border-custom shadow-sm">
                     <label className="flex items-center gap-2 text-xs font-bold text-text-secondary mb-4 uppercase tracking-wider">
                       <Camera className="w-4 h-4" /> Image-{idx + 1}

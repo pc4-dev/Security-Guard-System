@@ -30,7 +30,6 @@ export default function AdminView() {
   const [filterDate, setFilterDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [filterGuard, setFilterGuard] = useState('');
   const [filterSite, setFilterSite] = useState('');
-  const [filterRound, setFilterRound] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [exporting, setExporting] = useState(false);
   const [selectedLog, setSelectedLog] = useState<PatrolLog | null>(null);
@@ -117,18 +116,16 @@ export default function AdminView() {
 
   const uniqueGuards = Array.from(new Set(logs.map(log => log.guardName))).sort();
   const uniqueSites = Array.from(new Set(logs.map(log => log.siteName))).sort();
-  const uniqueRounds = Array.from(new Set(logs.filter(log => log.round).map(log => log.round))).sort();
 
   const filteredLogs = logs.filter(log => {
     const matchesDate = format(new Date(log.timestamp), 'yyyy-MM-dd') === filterDate;
     const matchesGuard = filterGuard === '' || log.guardName === filterGuard;
     const matchesSite = filterSite === '' || log.siteName === filterSite;
-    const matchesRound = filterRound === '' || log.round === filterRound;
     const matchesSearch = searchQuery === '' || 
       log.checkpointName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.guardName.toLowerCase().includes(searchQuery.toLowerCase());
     
-    return matchesDate && matchesGuard && matchesSite && matchesRound && matchesSearch;
+    return matchesDate && matchesGuard && matchesSite && matchesSearch;
   });
 
   const chartData = Array.from({ length: 8 }, (_, i) => {
@@ -303,19 +300,6 @@ export default function AdminView() {
                 </select>
               </div>
               <div className="flex items-center gap-2 px-3 py-2 bg-page-bg border border-border-custom rounded-xl text-sm text-text-secondary font-bold">
-                <Clock className="w-4 h-4" />
-                <select 
-                  value={filterRound} 
-                  onChange={(e) => setFilterRound(e.target.value)}
-                  className="bg-transparent outline-none cursor-pointer"
-                >
-                  <option value="">All Rounds</option>
-                  {uniqueRounds.map(round => (
-                    <option key={round} value={round}>{round}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 bg-page-bg border border-border-custom rounded-xl text-sm text-text-secondary font-bold">
                 <Users className="w-4 h-4" />
                 <select 
                   value={filterGuard} 
@@ -337,12 +321,10 @@ export default function AdminView() {
             <thead>
               <tr className="bg-page-bg border-b border-border-custom">
                 <th className="px-8 py-4 text-[10px] font-black text-text-secondary uppercase tracking-widest">Guard</th>
-                <th className="px-8 py-4 text-[10px] font-black text-text-secondary uppercase tracking-widest">Site & Round</th>
+                <th className="px-8 py-4 text-[10px] font-black text-text-secondary uppercase tracking-widest">Site</th>
                 <th className="px-8 py-4 text-[10px] font-black text-text-secondary uppercase tracking-widest">Checkpoint</th>
                 <th className="px-8 py-4 text-[10px] font-black text-text-secondary uppercase tracking-widest">Date & Time</th>
-                <th className="px-8 py-4 text-[10px] font-black text-text-secondary uppercase tracking-widest">Notes</th>
                 <th className="px-8 py-4 text-[10px] font-black text-text-secondary uppercase tracking-widest">Evidence</th>
-                <th className="px-8 py-4 text-[10px] font-black text-text-secondary uppercase tracking-widest">Status</th>
                 <th className="px-8 py-4 text-[10px] font-black text-text-secondary uppercase tracking-widest">Action</th>
               </tr>
             </thead>
@@ -363,11 +345,6 @@ export default function AdminView() {
                   </td>
                   <td className="px-8 py-6">
                     <p className="text-sm font-bold text-text-primary">{log.siteName}</p>
-                    {log.round && (
-                      <span className="text-[10px] font-black text-brand-primary uppercase tracking-wider bg-brand-light px-2 py-0.5 rounded-md mt-1 inline-block">
-                        {log.round}
-                      </span>
-                    )}
                   </td>
                   <td className="px-8 py-6">
                     <p className="text-sm font-bold text-text-primary">{log.checkpointName}</p>
@@ -384,15 +361,6 @@ export default function AdminView() {
                         <span className="text-[10px] font-medium opacity-70">{format(new Date(log.timestamp), 'MMM dd, yyyy')}</span>
                       </div>
                     </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    {log.notes ? (
-                      <div className="max-w-[150px]">
-                        <p className="text-xs text-text-primary italic line-clamp-2">"{log.notes}"</p>
-                      </div>
-                    ) : (
-                      <span className="text-[10px] text-text-muted italic opacity-50">No notes</span>
-                    )}
                   </td>
                   <td className="px-8 py-6">
                     <div className="flex gap-1">
@@ -425,14 +393,6 @@ export default function AdminView() {
                     </div>
                   </td>
                   <td className="px-8 py-6">
-                    <span className={cn(
-                      "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
-                      log.status === 'Completed' ? "bg-status-green-bg text-status-green" : "bg-status-red-bg text-status-red"
-                    )}>
-                      {log.status}
-                    </span>
-                  </td>
-                  <td className="px-8 py-6">
                     <button 
                       onClick={() => setSelectedLog(log)}
                       className="p-2 text-text-muted hover:text-brand-primary transition-colors"
@@ -444,7 +404,7 @@ export default function AdminView() {
               );
             }) : (
               <tr>
-                <td colSpan={8} className="px-8 py-12 text-center text-text-muted italic font-medium">
+                <td colSpan={6} className="px-8 py-12 text-center text-text-muted italic font-medium">
                   No patrol logs found for the selected filters.
                 </td>
               </tr>
@@ -499,11 +459,6 @@ export default function AdminView() {
                     </div>
                     <div className="flex items-center justify-between ml-6">
                       <p className="text-xs text-text-secondary">{selectedLog.siteName}</p>
-                      {selectedLog.round && (
-                        <span className="text-[10px] font-black text-brand-primary uppercase tracking-widest bg-white px-2 py-0.5 rounded-md border border-brand-primary/20">
-                          {selectedLog.round}
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -537,23 +492,6 @@ export default function AdminView() {
                       </div>
                     ))}
                   </div>
-                </div>
-
-                {selectedLog.notes && (
-                  <div>
-                    <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-2">Guard Notes</p>
-                    <div className="bg-page-bg p-4 rounded-2xl border border-border-custom">
-                      <p className="text-sm text-text-primary italic">"{selectedLog.notes}"</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between p-4 bg-status-green-bg rounded-2xl border border-status-green/10">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-status-green" />
-                    <span className="text-sm font-bold text-status-green">Verified Status</span>
-                  </div>
-                  <span className="text-xs font-black text-status-green uppercase tracking-widest">{selectedLog.status}</span>
                 </div>
               </div>
             </div>
