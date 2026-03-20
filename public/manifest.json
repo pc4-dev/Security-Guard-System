@@ -1,0 +1,23 @@
+{
+  "name": "Neoteric Guard Portal",
+  "short_name": "Guard Portal",
+  "description": "Secure Guard Portal for Neoteric Properties",
+  "start_url": "/?view=guard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#F97316",
+  "icons": [
+    {
+      "src": "https://picsum.photos/seed/shield/192/192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://picsum.photos/seed/shield/512/512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
