@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   ChevronRight,
   Calendar,
+  RotateCcw,
   Shield,
   LogIn,
   Image as ImageIcon
@@ -22,6 +23,7 @@ import * as XLSX from 'xlsx';
 import { firebaseService } from '../services/firebaseService';
 import { PatrolLog, DashboardStats } from '../types';
 import { cn } from '../utils';
+import ImagePreviewModal from './ImagePreviewModal';
 
 export default function SchoolAdminView() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -31,6 +33,8 @@ export default function SchoolAdminView() {
   const [filterGuard, setFilterGuard] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLog, setSelectedLog] = useState<PatrolLog | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const selectedSite = "School";
 
@@ -58,6 +62,12 @@ export default function SchoolAdminView() {
 
     return () => unsubscribe();
   }, []);
+
+  const handleClearFilters = () => {
+    setFilterDate(format(new Date(), 'yyyy-MM-dd'));
+    setFilterGuard('');
+    setSearchQuery('');
+  };
 
   const handleExportExcel = () => {
     try {
@@ -229,9 +239,17 @@ export default function SchoolAdminView() {
               return (
                 <div key={log.id} className="flex gap-4 group">
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-page-bg flex items-center justify-center overflow-hidden border border-border-custom">
+                  <div 
+                    className="w-10 h-10 rounded-full bg-page-bg flex items-center justify-center overflow-hidden border border-border-custom cursor-pointer hover:ring-2 hover:ring-brand-primary transition-all"
+                    onClick={() => {
+                      if (log.photoUrls?.[0]) {
+                        setPreviewImage({ url: log.photoUrls[0], name: `Evidence - ${log.guardName}` });
+                        setIsPreviewOpen(true);
+                      }
+                    }}
+                  >
                     {log.photoUrls?.[0] ? (
-                      <img src={log.photoUrls[0]} alt="Evidence" className="w-full h-full object-cover" />
+                      <img src={log.photoUrls[0]} alt="Evidence" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     ) : (
                       <ImageIcon className="w-5 h-5 text-text-muted" />
                     )}
@@ -288,6 +306,14 @@ export default function SchoolAdminView() {
                   ))}
                 </select>
               </div>
+              <button 
+                onClick={handleClearFilters}
+                className="flex items-center gap-2 px-4 py-2 bg-page-bg border border-border-custom rounded-xl text-sm text-text-muted hover:text-brand-primary hover:border-brand-primary/30 transition-all font-bold group"
+                title="Clear all filters"
+              >
+                <RotateCcw className="w-4 h-4 group-hover:rotate-[-45deg] transition-transform" />
+                <span className="hidden sm:inline">Clear All</span>
+              </button>
             </div>
           </div>
         </div>
@@ -338,11 +364,15 @@ export default function SchoolAdminView() {
                               key={i} 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                window.open(url, '_blank');
+                                setPreviewImage({ 
+                                  url, 
+                                  name: log.imageNames?.[i] || `Image ${i + 1} - ${log.guardName}` 
+                                });
+                                setIsPreviewOpen(true);
                               }}
                               className="w-10 h-10 rounded-lg overflow-hidden border border-border-custom cursor-pointer hover:ring-2 hover:ring-brand-primary transition-all shadow-sm"
                             >
-                              <img src={url} alt={`Evidence ${i}`} className="w-full h-full object-cover" />
+                              <img src={url} alt={`Evidence ${i}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             </div>
                           ))}
                           {log.photoUrls.length > 3 && (
@@ -457,10 +487,16 @@ export default function SchoolAdminView() {
                     {selectedLog.photoUrls?.map((url, i) => (
                       <div 
                         key={i} 
-                        onClick={() => window.open(url, '_blank')}
+                        onClick={() => {
+                          setPreviewImage({ 
+                            url, 
+                            name: selectedLog.imageNames?.[i] || `Image ${i + 1} - ${selectedLog.guardName}` 
+                          });
+                          setIsPreviewOpen(true);
+                        }}
                         className="aspect-square rounded-2xl overflow-hidden border border-border-custom shadow-sm cursor-pointer hover:ring-2 hover:ring-brand-primary transition-all"
                       >
-                        <img src={url} alt={`Evidence ${i}`} className="w-full h-full object-cover" />
+                        <img src={url} alt={`Evidence ${i}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       </div>
                     ))}
                   </div>
@@ -485,6 +521,12 @@ export default function SchoolAdminView() {
           </motion.div>
         </div>
       )}
+      <ImagePreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        imageUrl={previewImage?.url || null}
+        imageName={previewImage?.name || null}
+      />
     </div>
   );
 }

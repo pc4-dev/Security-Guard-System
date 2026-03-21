@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Send, CheckCircle2, Loader2, User, Building2, Camera, ClipboardCheck, Image as ImageIcon, Upload, X, RefreshCw } from 'lucide-react';
+import { MapPin, Send, CheckCircle2, Loader2, User, Building2, Camera, ClipboardCheck, Image as ImageIcon, Upload, X, RefreshCw, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { firebaseService } from '../services/firebaseService';
 import { Checkpoint, Guard } from '../types';
 import { cn } from '../utils';
 import CameraModal from './CameraModal';
+import ImagePreviewModal from './ImagePreviewModal';
 
 export default function SchoolGuardView() {
   const [guards, setGuards] = useState<Guard[]>([]);
@@ -17,6 +18,8 @@ export default function SchoolGuardView() {
   const [error, setError] = useState<string | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [showForceSubmit, setShowForceSubmit] = useState(false);
+  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const forceSubmitResolveRef = useRef<((value: any) => void) | null>(null);
 
   useEffect(() => {
@@ -365,11 +368,32 @@ export default function SchoolGuardView() {
 
                     {images[idx] && (
                       <div className="mt-2 flex items-center gap-2 p-2 bg-page-bg border border-border-custom rounded-xl relative group">
-                        <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
-                          <ImageIcon className="w-4 h-4 text-red-500" />
+                        <div 
+                          className="w-10 h-10 rounded-lg bg-white flex items-center justify-center flex-shrink-0 overflow-hidden cursor-pointer hover:ring-2 hover:ring-brand-primary transition-all shadow-sm"
+                          onClick={() => {
+                            setPreviewImage({ url: images[idx]!, name: imageNames[idx] || `Image ${idx + 1}` });
+                            setIsPreviewOpen(true);
+                          }}
+                        >
+                          <img 
+                            src={images[idx]!} 
+                            alt="Thumbnail" 
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-[10px] font-bold text-text-primary truncate">{imageNames[idx]}</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPreviewImage({ url: images[idx]!, name: imageNames[idx] || `Image ${idx + 1}` });
+                              setIsPreviewOpen(true);
+                            }}
+                            className="text-[10px] font-bold text-brand-primary flex items-center gap-1 hover:underline"
+                          >
+                            <Eye className="w-3 h-3" /> View Preview
+                          </button>
                         </div>
                         
                         {!submitting && (
@@ -529,6 +553,13 @@ export default function SchoolGuardView() {
             });
           }
         }}
+      />
+
+      <ImagePreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        imageUrl={previewImage?.url || null}
+        imageName={previewImage?.name || null}
       />
     </div>
   );

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Send, CheckCircle2, Loader2, User, Building2, Camera, ClipboardCheck, Image as ImageIcon, Upload, X, RefreshCw, Check } from 'lucide-react';
+import { MapPin, Send, CheckCircle2, Loader2, User, Building2, Camera, ClipboardCheck, Image as ImageIcon, Upload, X, RefreshCw, Check, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { firebaseService } from '../services/firebaseService';
 import { Checkpoint, Guard } from '../types';
 import { cn } from '../utils';
 import CameraModal from './CameraModal';
+import ImagePreviewModal from './ImagePreviewModal';
 
 export default function GardenCityGuardView() {
   const [guards, setGuards] = useState<Guard[]>([]);
@@ -16,6 +17,8 @@ export default function GardenCityGuardView() {
   const [error, setError] = useState<string | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   // Form State
   const [selectedGuard, setSelectedGuard] = useState('');
@@ -336,12 +339,33 @@ export default function GardenCityGuardView() {
                 {images[index] && (
                   <div className="p-4 bg-brand-light/20 border border-brand-primary/10 rounded-2xl flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0">
-                        <Check className="w-5 h-5 text-green-500" />
+                      <div 
+                        className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0 overflow-hidden cursor-pointer hover:ring-2 hover:ring-brand-primary transition-all"
+                        onClick={() => {
+                          setPreviewImage({ url: images[index]!, name: imageNames[index] || `Image ${index + 1}` });
+                          setIsPreviewOpen(true);
+                        }}
+                      >
+                        <img 
+                          src={images[index]!} 
+                          alt="Thumbnail" 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
                       </div>
                       <div className="overflow-hidden">
                         <p className="text-[10px] font-black text-brand-primary uppercase tracking-widest">Image Confirmed</p>
                         <p className="text-sm font-bold text-text-primary truncate">{imageNames[index]}</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPreviewImage({ url: images[index]!, name: imageNames[index] || `Image ${index + 1}` });
+                            setIsPreviewOpen(true);
+                          }}
+                          className="text-[10px] font-bold text-brand-primary flex items-center gap-1 hover:underline"
+                        >
+                          <Eye className="w-3 h-3" /> View Preview
+                        </button>
                       </div>
                     </div>
                     {!submitting && (
@@ -465,6 +489,13 @@ export default function GardenCityGuardView() {
             setIsUploading(false);
           }
         }}
+      />
+
+      <ImagePreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        imageUrl={previewImage?.url || null}
+        imageName={previewImage?.name || null}
       />
     </div>
   );
