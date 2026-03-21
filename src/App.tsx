@@ -79,6 +79,25 @@ function Login({ onLogin }: { onLogin: () => void }) {
         </button>
         
         <p className="mt-8 text-xs text-text-muted uppercase tracking-widest font-bold">Authorized Personnel Only</p>
+        
+        <button 
+          onClick={() => {
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(registrations => {
+                for (let registration of registrations) {
+                  registration.unregister();
+                }
+              });
+            }
+            caches.keys().then(names => {
+              for (let name of names) caches.delete(name);
+            });
+            window.location.reload();
+          }}
+          className="mt-4 text-[10px] text-text-muted hover:text-brand-primary transition-colors uppercase tracking-widest font-bold"
+        >
+          Clear App Cache
+        </button>
       </motion.div>
     </div>
   );
