@@ -14,6 +14,7 @@ import firebaseConfig from '../firebase-applet-config.json';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
 import { firebaseService } from './services/firebaseService';
 import { api } from './api';
+import { Logo } from './components/Logo';
 
 type View = 'home' | 'guard' | 'admin' | 'garden-city' | 'school' | 'school-admin';
 
@@ -45,8 +46,8 @@ function Login({ onLogin }: { onLogin: () => void }) {
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white p-10 rounded-[40px] shadow-2xl border border-border-custom max-w-md w-full text-center"
       >
-        <div className="w-20 h-20 bg-brand-light rounded-3xl flex items-center justify-center mx-auto mb-8">
-          <Shield className="w-10 h-10 text-brand-primary" />
+        <div className="w-24 h-24 mx-auto mb-8 drop-shadow-2xl">
+          <Logo className="w-full h-full" />
         </div>
         <h1 className="text-3xl font-black text-text-primary mb-2">Neoteric Properties</h1>
         <p className="text-text-secondary mb-10">Secure Guard Portal & Admin Dashboard</p>
@@ -146,9 +147,9 @@ export default function App() {
     <div className="min-h-screen bg-page-bg flex flex-col md:flex-row font-sans text-text-primary">
       {/* Mobile Header */}
       <div className="md:hidden bg-white border-b border-border-custom p-4 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <Shield className="w-6 h-6 text-brand-primary" />
-          <span className="font-bold text-text-primary">Neoteric Properties</span>
+        <div className="flex items-center gap-3">
+          <Logo className="w-10 h-10" />
+          <span className="font-black text-text-primary tracking-tight">Neoteric</span>
         </div>
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-text-secondary">
           {isSidebarOpen ? <X /> : <Menu />}
@@ -169,10 +170,12 @@ export default function App() {
           >
             <div className="flex flex-col gap-1 mb-10">
               <div className="flex items-center gap-3">
-                <Shield className="w-8 h-8 text-brand-primary" />
-                <h1 className="text-xl font-bold tracking-tight">Neoteric</h1>
+                <Logo className="w-12 h-12 drop-shadow-lg" />
+                <div>
+                  <h1 className="text-xl font-black tracking-tight leading-none text-white">Neoteric</h1>
+                  <p className="text-[9px] text-brand-primary uppercase tracking-[0.3em] font-bold mt-1">Properties</p>
+                </div>
               </div>
-              <p className="text-[10px] text-text-muted uppercase tracking-[0.2em] ml-11">Properties</p>
             </div>
 
             <nav className="space-y-2">

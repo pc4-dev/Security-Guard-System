@@ -1,6 +1,7 @@
 import React from 'react';
 import { Shield, UserCheck, LayoutDashboard, ArrowRight, MapPin, Building2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { Logo } from './Logo';
 
 interface LandingPageProps {
   onSelect: (view: 'guard' | 'admin' | 'garden-city' | 'school' | 'school-admin') => void;
@@ -14,9 +15,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSelect }) => {
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-12"
       >
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <Shield className="w-12 h-12 text-brand-primary" />
-          <h1 className="text-4xl font-black tracking-tight">Neoteric</h1>
+        <div className="flex items-center justify-center gap-4 mb-4">
+          <Logo className="w-20 h-20 drop-shadow-2xl" />
+          <h1 className="text-5xl font-black tracking-tight text-text-primary">Neoteric</h1>
         </div>
         <p className="text-sm text-text-secondary uppercase tracking-[0.4em] font-bold">Properties Security System</p>
         <div className="mt-4 flex items-center justify-center gap-2 text-text-muted">
